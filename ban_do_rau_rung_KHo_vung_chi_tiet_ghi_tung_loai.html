@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Bản đồ số rau rừng K'Ho – Bidoup • Hòn Giao • Khánh Lê (chi tiết)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#fff}
+  #app{display:flex;height:100vh;width:100vw}
+  #sidebar{width:42%;min-width:330px;max-width:720px;padding:14px;overflow:auto;border-right:1px solid #e5e7eb;background:#fcfcff}
+  #map{flex:1}
+  h1{font-size:18px;margin:0 0 6px}
+  .sub{font-size:12px;color:#4b5563;line-height:1.45;margin-bottom:10px}
+  .note{font-size:12px;background:#fff6e5;border:1px solid #ffd9a6;padding:10px;border-radius:12px;margin:10px 0}
+  .tabs{display:flex;gap:8px;margin:10px 0}
+  .tab{padding:7px 10px;border-radius:999px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:750;cursor:pointer;user-select:none}
+  .tab.active{background:#111827;color:#fff;border-color:#111827}
+  .section{display:none}
+  .section.active{display:block}
+  .search{display:flex;gap:8px;margin:10px 0}
+  input[type="text"]{flex:1;padding:8px 10px;border-radius:12px;border:1px solid #e5e7eb;font-size:12px}
+  select{padding:8px 10px;border-radius:12px;border:1px solid #e5e7eb;font-size:12px;background:#fff}
+  .card{border:1px solid #e5e7eb;background:#fff;border-radius:16px;padding:10px 12px;margin-bottom:10px}
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .title{font-size:14px;font-weight:900}
+  .desc{font-size:12px;color:#4b5563;margin-top:6px;line-height:1.45}
+  .btn{padding:7px 10px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;font-size:12px;font-weight:750;cursor:pointer}
+  .btn:hover{background:#f8fafc}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;border:1px solid #e5e7eb;color:#374151;background:#f9fafb}
+  .row{font-size:12px;color:#374151;margin-top:4px;line-height:1.45}
+  .row b{color:#111827}
+  .mini{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.4}
+  details{margin-top:8px}
+  details summary{cursor:pointer;font-weight:800;font-size:12px;color:#111827}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid #e5e7eb;background:#f9fafb}
+  .dot{width:10px;height:10px;border-radius:999px;display:inline-block;opacity:.8}
+  .toggleLine{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:#374151}
+  @media(max-width:980px){
+    #app{flex-direction:column}
+    #sidebar{width:100%;max-width:none;border-right:none;border-bottom:1px solid #e5e7eb;height:60vh}
+    #map{height:40vh}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <h1>Rau rừng K'Ho – bản đồ vùng chi tiết</h1>
+    <div class="sub">
+      Tập trung: <b>VQG Bidoup – Núi Bà</b>, <b>núi Hòn Giao</b>, và <b>đèo Khánh Lê</b> (tách thượng/trung/hạ đèo).<br>
+      ⚠️ Đây là <b>vùng khái quát</b> theo tri thức bản địa. Không hiển thị điểm thu hái hoặc GPS chính xác.
+    </div>
+
+    <div class="note">
+      ✨ Bạn muốn “ghi riêng từng cây” và “tách chi tiết hơn” thì đây nè:
+      <ul style="margin:8px 0 0 18px;padding:0;color:#374151">
+        <li>Tab <b>17 loài</b>: mỗi loài 1 thẻ riêng, có phần “nơi mọc”, “cách chế biến”, “lưu ý”.</li>
+        <li>Tab <b>Vùng</b>: 6 vùng khu vực chi tiết + lớp phủ sinh thái (bật/tắt).</li>
+      </ul>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="species">17 loài</div>
+      <div class="tab" data-tab="regions">Vùng</div>
+    </div>
+
+    <div class="search">
+      <input id="q" type="text" placeholder="Tìm: tên Việt / tên Cơ Ho / tên khoa học / họ..." />
+      <select id="filter">
+        <option value="all">Tất cả</option>
+        <option value="bidoup">Bidoup – Núi Bà</option>
+        <option value="honggiao">Hòn Giao</option>
+        <option value="khanhle">Đèo Khánh Lê</option>
+        <option value="ven_suoi">Sinh thái: Ven suối</option>
+        <option value="rung_am">Sinh thái: Rừng ẩm dưới tán</option>
+        <option value="dat_am">Sinh thái: Đất ẩm – đất thấp</option>
+        <option value="gan_ray">Sinh thái: Gần rẫy – ven dân cư</option>
+      </select>
+    </div>
+
+    <div id="species" class="section active"></div>
+    <div id="regions" class="section"></div>
+  </div>
+
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  const SPECIES = [{"tt": 1, "ten": "Cần nước", "coho": "Biap Sơp", "khoa_hoc": "Oenanthe javanica (Blume) DC.", "ho": "Apiaceae", "bo_phan": "Ngọn non", "habitat": "-Đặc điểm: Rau cần nước là loài cây thân thảo đa niên, phát triển bằng cách nhảy chồi. Thân xốp, chia thành nhiều đốt. Mổi đốt có mang một lá. Thân cao 20-30 cm (có thể đến 50-60 cm). Rể: Rau cần nước thuộc nhóm rễ chùm, mọc ở đốt. - Nơi mọc: Rau cần nước thường mọc ở những nơi có nước hoặc môi trường ẩm ướt, dọc bờ suối, ao hồ; Ven các vùng đất trũng, ẩm ướt; Trong các vùng đất thấp có nguồn nước chảy qua.", "cooking": "Người Cơ Ho thường sử dụng rau cần nước một cách đơn giản trong bữa ăn hằng ngày: Cách sử dụng: Xào tỏi, luộc hoặc nấu canh: - Hái rau cần nước tươi, rửa sạch đem xào với tỏi đập dập hoặc luộc chín, ăn với mắm, muối ớt. - Nấu canh rau cần nước với các nguyên liệu khác như cá suối, tôm suối. - Có thể kết hợp nấu với cháo cá suối. -Có thể ăn kèm với món lẩu cá. -Có thể xào với thịt heo hoặc thịt bò.", "notes": "Người Cơ Ho có những quan niệm và lưu ý khi sử dụng rau cần nước: - Không hái ở những nơi ô nhiễm: Rau cần nước phải được hái từ những nguồn nước sạch, tránh hái ở những khu vực nước bẩn, gần các nguồn ô nhiễm. - Chỉ hái phần lá non: Khi sử dụng, người Cơ Ho chỉ hái phần lá non và ngọn, để cây có thể tiếp tục phát triển và không bị mất giống. - Sử dụng tươi: Rau cần nước thường được hái và sử dụng ngay trong ngày, không tích trữ lâu dài.", "eco_suggest": ["ven_suoi", "dat_am"]}, {"tt": 2, "ten": "Xuân tiết", "coho": "Ta brach", "khoa_hoc": "Justicia adhatoda L.", "ho": "Acanthaceae", "bo_phan": "Lá non", "habitat": "- Đặc điểm: Xuân tiết thuộc dạng cây nhỡ hay cây gỗ nhỏ, chiều cao mỗi cây khoảng cao khoảng 40–100 cm Lá có cuống, phiến lá có dạng hình ngọn giáo, gốc lá nhọn, mép nguyên, mặt trên của lá nhẵn, mặt dưới hơi có lông mịn, lá có chiều dài khoảng từ 7 đến 25cm, chiều rộng từ 2,5 đến 7cm. Hoa của cây Xuân tiết có kích thước lớn, mọc thành bông ở ngọn, cuống hoa dài 3-7cm. Quả nang, có lông mềm, chiều dài khoảng 6mm, mỗi quả chứa 4 hạt, hạt dẹt có dạng hình lăng kính. - Nơi mọc: Tập trung thành bụi, thường gặp trong rừng thứ sinh, rừng ẩm, ven suối hoặc dưới tán rừng.", "cooking": "* Luộc / trụng làm rau ăn hằng ngày: Ngọn và lá non rửa sạch. Luộc nhanh 2–3 phút, không luộc lâu, sau đó vớt ra, để ráo. Ăn kèm muối ớt giã, muối mè hoặc mắm ớt rừng. Đây là cách phổ biến nhất trong bữa ăn gia đình người Cơ Ho. * Xào với gia vị rừng: Phi hành, tỏi (hoặc sả rừng), sau đó cho rau vào xào nhanh tay. Có thể xào cùng cá khô, thịt rừng hoặc trứng. Cuối cùng là nêm muối/ớt, không nêm quá đậm để giữ vị tự nhiên. *Nấu canh (canh rau rừng): Nấu cùng với cá suối, Tôm khô hoặc chỉ nấu nước + muối và dầu ăn. Cho rau vào sau cùng, sôi lại là tắt bếp. Canh có vị thanh, hơi chát nhẹ, rất dễ ăn.", "notes": "", "eco_suggest": ["ven_suoi", "rung_am"]}, {"tt": 3, "ten": "Mua chua", "coho": "Nha Srat", "khoa_hoc": "Melastomataceae", "ho": "Melastomataceae", "bo_phan": "Lá non", "habitat": "- Đặc điểm: Lá: Lá cây có hình bầu dục, dài từ 6–12 cm, với ba gân chính rõ rệt chạy dọc theo chiều dài lá; Nụ hoa: Các nụ hoa có màu nâu đỏ, mọc thành cụm ngắn ở đầu cành. - Nơi mọc: Cây mua chua thường phát triển mạnh ở những nơi ẩm ướt, trong các khu rừng nhiệt đới, đầm lầy, ven suối và dọc theo các con đường. Cây có khả năng thích nghi tốt với nhiều loại đất và ánh sáng khác nhau, nhưng ưa ánh sáng mặt trời đầy đủ hoặc bán râm.", "cooking": "Người Cơ Ho thường dùng lá non của cây mua chua. Cách nấu rất mộc mạc, không nhiều gia vị, giữ hương vị tự nhiên của rau rừng * Món canh mua chua kiểu Cơ Ho Đây là món phổ biến và đặc trưng nhất. Nguyên liệu: Lá non mua chua Cá suối, thịt rừng hoặc thịt heo bản (tùy điều kiện) Muối hột Ớt rừng (tùy khẩu vị) Cách làm: - Rửa sạch lá, cắt khúc vừa ăn. - Nấu nước cho sôi, cho cá suối hoặc thịt vào trước. - Khi thịt/cá gần mềm thì cho lá mua chua vào. - Nêm muối hột, không dùng nhiều gia vị để giữ vị chua tự nhiên. - Nấu nhanh 2–3 phút, rau chuyển màu xanh trong thì tắt bếp. - Hương vị: Vị chua đặc trưng của mua chua giúp món canh thanh mát, giống canh me tự nhiên nhưng nhẹ hơn. * Món rau mua chua nấu với thịt ếch. - Sơ chế ếch và ướp: Chà muối, rửa sạch, để ráo. Ướp thịt ếch với tiêu rừng, ớt, nước mắm, đường cho thấm. - Xào ếch: Phi thơm sả, tỏi, ớt, tiêu rừng cho thịt ếch vào xào săn lại. ", "notes": "", "eco_suggest": ["ven_suoi"]}, {"tt": 4, "ten": "Thu hải đường", "coho": "Tinh ti", "khoa_hoc": "Begonia", "ho": "Begoniaceae", "bo_phan": "Lá, cuống", "habitat": "- Lá: Lá xẻ thùy, mép có răng cưa nhẹ. Bề mặt lá xanh bóng, có lông mịn. Gân lá tỏa từ cuống, lá không đối xứng – đặc trưng của giống Begonia. - Thân – Cuống lá: Mọng nước, giòn, dễ bẻ. Thân thường màu xanh hoặc hơi đỏ tùy loài. -Hoa: Hoa mọc riêng lẻ hoặc thành cụm, thường màu hồng, trắng, đỏ nhạt. Hoa đơn tính nhưng cùng gốc (hoa đực – hoa cái trên cùng cây). - Mùi vị: Vị chua dịu, thanh mát. Lá non và thân non thường được sử dụng. 2. Cách chế biến thu hải đường thành các món ăn của người Cơ Ho Người Cơ Ho thường dùng lá và thân non của Thu hải đường rừng. Cách nấu rất mộc mạc, không nhiều gia vị, giữ hương vị tự nhiên của rau rừng * Món canh Thu hải đường kiểu Cơ Ho Đây là món phổ biến và đặc trưng nhất. Nguyên liệu: Lá và thân non Thu hải đường Cá suối, thịt rừng hoặc thịt heo bản (tùy điều kiện) Muối hột Ớt rừng (tùy khẩu vị) Cách làm: - Rửa sạch lá, cắt khúc vừa ăn. - Nấu nước cho ", "cooking": "", "notes": "", "eco_suggest": ["ven_suoi"]}, {"tt": 5, "ten": "Rau tai voi", "coho": "Tôr wẻh", "khoa_hoc": "Chirita colaniae Pellegr.", "ho": "Gesneriaceae", "bo_phan": "Lá non", "habitat": "-Đặc điểm: + Là cây thảo, mọc thành bụi nhỏ hoặc rải rác trên đất ẩm. Thân mềm, thường bò sát mặt đất hoặc hơi vươn cao tùy vùng mọc. + Lá: Hình tròn hoặc bầu dục to, trông giống tai voi – đây là lý do có tên gọi này. Mặt lá xanh đậm, bóng, dày, có nhiều gân nổi. Mép lá nguyên, cuống lá dài. - Nơi mọc: Mọc nhiều ở đất ẩm, ven suối, dưới tán rừng hoặc khu vực rẫy có bóng mát. Ưa khí hậu mát – ẩm, phát triển mạnh vào mùa mưa.", "cooking": "", "notes": "", "eco_suggest": ["ven_suoi", "gan_ray", "rung_am", "dat_am"]}, {"tt": 6, "ten": "Lổ bình", "coho": "Kdơl vôp", "khoa_hoc": "Lobelia alsinoides.", "ho": "Lobeliaceae", "bo_phan": "Ngọn non", "habitat": "- Đặc điểm: Lổ bình là loại cỏ nhỏ, cao 5 – 30cm; thân có 3 khía cao. Lá có phiến xoan, không lông, bìa có răng, cuống dài 2 – 20mm. Hoa màu lam, ở nách lá hoa hẹp ở chót thân; cuống dài 1cm; đài cao 3 – 4mm; vành xẻ đến đáy, môi dưới có ba thùy bằng nhau; tiểu nhụy có 5, có lông. Nang cao 2 – 6mm; hạt nhỏ, vàng. Mùa hoa tháng 10 – 12. Mùa quả tháng 2 – 3. - Nơi mọc: Lỗ bình có môi trường phân bố giống cần dại, tập trung chỗ đất ẩm, dọc theo khe suối, hoặc giữa đầm lầy.", "cooking": "", "notes": "- Quan niệm của người Cơ Ho về rau lỗ bình + Lỗ bình được xem là rau mát, giúp giải nóng, thanh bụng và làm nhẹ người sau khi đi rừng, làm rẫy. + Chỉ dùng ngọn non và lá non, vì phần này mềm, còn lá già bị xem là nặng bụng. + Rau lỗ bình mang tính mộc mạc, nên chế biến đơn giản để giữ vị tự nhiên của rừng. -Lưu ý khi sử dụng: + Chỉ hái rau ở nơi sạch, đất ẩm tự nhiên, tránh khu vực nước bẩn hoặc đất bị nhiễm bùn độc. + Không dùng lá đã héo hoặc chuyển tím đậm, vì người Cơ Ho tin rằng loại đó dễ gây đau bụng. + Rau phải dùng ngay trong ngày, không để qua đêm vì nhanh héo và mất vị. + Nấu nhanh, không thêm nhiều gia vị (tránh đường hoặc bột ngọt) để giữ tính mát và vị nguyên bản. + Cẩn thận ph", "eco_suggest": ["ven_suoi", "dat_am"]}, {"tt": 7, "ten": "Tiêu rừng", "coho": "Li Lu", "khoa_hoc": "Litsea cubeba (Lour.) Pers.", "ho": "Lauraceae", "bo_phan": "Quả, lá", "habitat": "-Đặc điểm: Cây tiêu rừng là cây thân gỗ hoàn toàn khác biệt với tiêu thường. Đây là một loại cây thân gỗ, mọc thẳng, có nhiều cành, vỏ nhẵn và không có gai. Lá tiêu rất nhẵn, màu xanh mọc chẽ ra làm 3 lá hai bên và rất xum xuê. Mùa thu hoạch tiêu rừng từ tháng 7-8 hàng năm. -Nơi mọc: Ưa ẩm, ưa bóng, thường mọc ở rừng lá rộng ẩm, dưới tán cây lớn, bờ suối, khe núi.", "cooking": "", "notes": "", "eco_suggest": ["ven_suoi", "rung_am"]}, {"tt": 8, "ten": "Rau bầu đất", "coho": "Nha Cơ Đêr Lốh", "khoa_hoc": "Gynura procumbens", "ho": "Asteraceae", "bo_phan": "Lá, ngọn", "habitat": "- Đặc điểm: -Dạng thân: Thân thảo, mọc bò hoặc hơi leo. Thân mềm, màu xanh hoặc tím nhạt, phân nhiều nhánh. - Lá: Lá mọc so le, hình trứng thuôn dài, đầu nhọn. Mép lá hơi khía răng cưa nhẹ. Mặt lá xanh mướt, gân rõ. Lá non có thể hơi tím ở cuống. - Nơi mọc: -Mọc tự nhiên hoặc bán tự nhiên: Ven rẫy, gần nhà, dưới tán rừng thưa, nơi đất ẩm. Cây dễ sống, không cần trồng nhiều, thường để mọc tự nhiên rồi hái ăn.", "cooking": "", "notes": "- Không hái cả gốc, chỉ hái lá và ngọn non. Để cây tiếp tục mọc lại - Không hái ở nơi đất bẩn, gần nguồn nước ô nhiễm.", "eco_suggest": ["gan_ray", "rung_am", "dat_am"]}, {"tt": 9, "ten": "Rau mác thon", "coho": "Rau Chré (vị ngọt)", "khoa_hoc": "Pontederia plantaginea Roxb.", "ho": "Pontederiaceae", "bo_phan": "Lá và thân non", "habitat": "- Đặc điểm nhận dạng của cây mác thon: Thân: Dạng thân rỗng hoặc xốp, màu xanh nhạt. Thân dài, mọc thẳng, có dịch nhựa trong. Lá: Lá hình trái tim hoặc hình bầu dục nhọn, màu xanh bóng. Phiến lá dày, bóng, gân nổi. - Nơi mọc: Cây mác thon chủ yếu mọc ở những vùng đất ẩm ướt, thường gặp ở ven suối, các khu vực đất có độ ẩm cao như khu rừng thưa hoặc dưới các tán cây lớn. Cây cũng có thể mọc tại những vùng đất thấp, nơi có bóng râm hoặc đất phì nhiêu.", "cooking": "Cách sử dụng: - Món ăn: Người Cơ Ho thường hái lá và thân non của cây ráy thon, rửa sạch và dùng như một loại rau trong các món canh, xào hoặc nấu chung với cá suối, thịt heo, hoặc măng. Lá ráy thon có thể nấu canh chung với các nguyên liệu khác như cá suối hoặc tép, tạo ra những món ăn thanh mát, dễ ăn.", "notes": "", "eco_suggest": ["ven_suoi", "rung_am", "dat_am"]}, {"tt": 10, "ten": "Rau nghể răm", "coho": "Tao rang vrê", "khoa_hoc": "Polygonum odoratum", "ho": "Polygonaceae", "bo_phan": "Lá", "habitat": "- Đặc điểm nhận dạng của cây nghễ răm: Là cây thân thảo hàng năm, cao 20-70cm, có thân mọc đứng, phân nhánh, gióng dài. Đặc điểm nhận dạng nổi bật là lá hình mũi mác hẹp, có vết rám hình chữ V trên mặt trên, cuống ngắn, bẹ chìa mỏng; hoa màu đỏ hoặc hồng tía mọc thành bông rủ xuống ở ngọn và kẽ lá; quả nhỏ, hình bầu dục, bóng. Cây có vị cay, thơm đặc trưng. - Nơi mọc: Loại rau này không cần trồng vẫn mọc dại ở nhiều nơi, đặc biệt là những nơi ẩm ướt như ven sông, suối, ruộng nước.", "cooking": "Cách sử dụng: Trong văn hóa ẩm thực của người Cơ Ho, cây nghể răm được biết đến với vị cay nồng và mùi thơm hắc đặc trưng, thường được sử dụng như một loại rau sống hoặc gia vị trong các món ăn dân dã, đặc biệt là các món liên quan đến thịt rừng, cá suối và các loại gỏi. Hỗ trợ chữa một số bệnh về da - Mụn nhọt: giã nát rau nghể răm đắp lên vùng da bị mụn nhọt giúp giảm viêm, sưng tấy, nhanh chóng làm khô đầu mụn. - Lở ngứa: dùng nước sắc rau nghể răm để tắm hoặc rửa vùng da bị lở ngứa giúp giảm ngứa, kháng khuẩn, thúc đẩy quá trình lành vết thương. - Ghẻ lở: rau nghể răm kết hợp với các vị thuốc khác có tác dụng trị ghẻ lở hiệu quả. - Rau nghể răm có tác dụng cầm máu hiệu quả nhờ chứa hàm lượng tanin cao. Dân gian thường dùng rau nghể răm để cầm máu trong các trường hợp: Chảy máu cam: vò nát lá rau nghể răm nhét vào lỗ mũi giúp cầm máu nhanh chóng; Chảy máu vết thương: giã nát rau nghể ", "notes": "", "eco_suggest": ["ven_suoi", "gan_ray"]}, {"tt": 11, "ten": "Hương bài (Xương quạt)", "coho": "Nha Chấu", "khoa_hoc": "Dianella ensifolia DC", "ho": "Phormiaceae", "bo_phan": "Đọt non, lá.", "habitat": "-Đặc điểm: Cây thân thảo, sống lâu năm, rễ bò, thân mọc thẳng đứng cao khoảng dưới 50cm; Lá: Dài 20-40cm, rộng 15-20mm, hình mác dài, gân song song, mọc ốp vào thân tạo thành hình quạt xòe; Hoa: Cánh hoa màu vàng cam có đốm tím, cuống dài, 3 nhị; Quả nang hình trứng, có 3 van, chứa nhiều hạt nhỏ màu xanh đen, bóng. -Nơi mọc: Mọc trên đất feralit đỏ vàng (rất thích hợp), đất mùn, đất vườn, đất cát pha, thoát nước tốt. Mọc dưới tán rừng.", "cooking": "", "notes": "", "eco_suggest": ["ven_suoi", "gan_ray", "rung_am"]}, {"tt": 12, "ten": "Rau dớn", "coho": "Nha cơ tông", "khoa_hoc": "Diplazium esculentum (Retz.) Sw.", "ho": "Athyriaceae", "bo_phan": "Ngọn non", "habitat": "- Đặc điểm: + Là dương xỉ thân thảo, không có thân gỗ. Gốc thường mọc thành bụi to, rễ ăn nông. Lá mọc vòng quanh gốc tạo thành túm. + Lá: dài từ 40–100 cm, cá biệt có thể dài hơn. Lá kép lông chim, gồm nhiều lá chét nhỏ hai bên cuống. Lá non (đọt dớn) cuộn tròn như đầu con tôm – đây là phần ăn được. + Màu sắc: Lá non xanh nhạt, mềm. Lá trưởng thành xanh đậm, cứng và có lớp lông mịn. - Nơi mọc: + Sống ở vùng ẩm, gần khe suối, rừng ẩm, ven sông, thung lũng. + Ưa bóng râm hoặc nắng nhẹ. + Mọc hoang tự nhiên, phát triển mạnh vào mùa mưa. + Sinh trưởng nhanh, tái sinh khỏe từ chồi gốc.Thu hoạch đọt non liên tục được mà không làm hại bụi. Ít sâu bệnh do là loài dương xỉ tự nhiên. - Phân biệt rau dớn với cây dương xỉ không ăn được + Đọt dớn cuộn tròn đều, thân màu xanh nhạt, không có gai. Lá mềm, cuống xanh, không có mùi khó chịu. + Một số loại dương xỉ độc/không ăn được có: Đọt nhỏ và cứng, k", "cooking": "*Món Rau dớn luộc chấm muối ớt (cách đơn giản – phổ biến nhất) Nguyên liệu: Đọt dớn non. Muối hạt, ớt rừng, vắt chanh. Cách làm: -Nhặt bỏ phần già, rửa sạch. - Đun nước sôi, cho ít muối rồi thả dớn vào luộc nhanh 1–2 phút (người Cơ Ho thường không luộc lâu để giữ độ giòn). - Vớt ra để ráo. Giã muối + ớt rừng làm chấm. - Ăn ngay khi còn nóng; vị giòn, hơi nhớt đặc trưng. *Món canh rau dớn nấu với cá suối: - Nguyên liệu: Rau dớn non. Cá suối tươi (cá chạch, cá suối nhỏ…) Sả, ớt, lá rừng (lá bép rừng nếu có), muối - Cách nấu: + Cá suối làm sạch, để nguyên con. Cho cá vào nồi với nước, đun sôi. + Khi cá vừa chín, cho rau dớn + sả + ớt vào. + Nêm muối, không dùng nhiều gia vị (theo lối truyền thống). + Món canh có vị thanh, thơm, nước trong và ngọt tự nhiên của cá. *Món rau dớn xào mỡ heo bản - Người Cơ Ho trước đây ít dùng dầu; thay vào đó dùng mỡ heo bản (heo cỏ). Nguyên liệu: Rau dớn, Mỡ h", "notes": "", "eco_suggest": ["ven_suoi", "rung_am", "dat_am"]}, {"tt": 13, "ten": "Lân hoa gié  (lá lốt rừng)", "coho": "Biap toh rhoa", "khoa_hoc": "Lepianthes umbellatum (L.) Raf.", "ho": "Piperaceae", "bo_phan": "Lá non, thân", "habitat": "-Đặc điểm: + Thuộc nhóm cây thảo – dây leo hoặc cây mọc đứng thấp.Thân tròn, mềm, có đốt rõ, khi già hơi hóa gỗ nhẹ. Thường có mùi thơm đặc trưng giống lá lốt truyền thống, nhưng nhẹ hơn; + Lá: Lá to, hình tim tròn, mép nguyên. Bề mặt lá sần vân gân nổi, giống lớp lưới – đây là đặc điểm rất rõ khi nhìn gần. Cuống lá dài 3–7 cm. Lá thường bóng, nhiều loại có vết thủng do sâu cắn như trong hình.Mùi lá: thơm dịu, hơi cay ấm, gần giống hồ tiêu non. +Hoa – Gié: Hoa mọc thành gié dài (dạng bông dài giống tiêu), màu trắng ngà hoặc xanh nhạt. Gié hoa mảnh, dài khoảng 3–8 cm. Hoa nhỏ li ti, không có cánh. Là lý do cây được gọi là hoa gié. -Nơi mọc: Ưa ẩm, ưa bóng, thường mọc ở rừng lá rộng ẩm, dưới tán cây lớn, bờ suối, khe núi.", "cooking": "", "notes": "", "eco_suggest": ["ven_suoi", "rung_am"]}, {"tt": 14, "ten": "Cây bột ngọt", "coho": "R’nhàu", "khoa_hoc": "Sterculia sp.", "ho": "Sterculiaceae", "bo_phan": "Lá", "habitat": "- Dạng cây: + Cây thân thảo hóa gỗ, cao trung bình từ 0,5 – 1,5 m, sinh trưởng tốt trong điều kiện rừng ẩm, rừng thứ sinh hoặc vườn nhà dưới tán cây. Thân nhỏ, nhẵn, phân cành nhiều; cành non màu xanh, cành già hơi hóa gỗ. + Lá: Lá đơn, mọc so le. Phiến lá hình bầu dục hoặc thuôn dài, đầu lá nhọn, gốc lá thuôn. Mép lá nguyên, không răng cưa. Mặt lá xanh đậm, bóng, gân lá rõ. Lá non mềm, lá già dày và dai hơn - Nơi mọc: Cây bột ngọt là cây dạng thân leo, mọc chủ yếu trong môi trường tự nhiên, nơi có khí hậu ẩm ướt. Trong rừng sâu, đặc biệt cây ưa bóng râm và không cần ánh sáng mặt trời trực tiếp quá nhiều. 3. Giá trị sử dụng – cách làm “bột ngọt tự nhiên” - Lá cây có vị ngọt hậu, vị umami rõ, khi nấu canh hoặc hầm giúp món ăn ngọt tự nhiên, không cần sử dụng bột ngọt công nghiệp. Theo tri thức bản địa, lá được dùng: Nấu canh rau. Nấu nước dung. Phơi khô, nghiền nhỏ làm bột nêm tự nhiên. C", "cooking": "", "notes": "a) Quan niệm trong sử dụng - Người Cơ Ho xem cây bột ngọt rừng là cây lành, dễ dùng, nhưng vẫn phải biết cách hái và sử dụng đúng. - Cây được coi là “rau – thuốc”, tức là vừa là thực phẩm, vừa có tác dụng bồi bổ nếu dùng thường xuyên với lượng vừa phải. - Việc hái lá thường gắn với quan niệm tôn trọng rừng, chỉ hái đủ dùng, không nhổ cả gốc để cây tiếp tục sinh trưởng. b) Lưu ý khi sử dụng - Chỉ hái lá khỏe, không sâu bệnh, tránh lá già quá hoặc lá non quá. Không dùng lá đã héo úa, đổi màu hoặc mọc ở nơi ô nhiễm. - Khi làm bột nêm, phải phơi hoặc sấy khô hoàn toàn để tránh ẩm mốc.", "eco_suggest": ["ven_suoi", "gan_ray", "rung_am"]}, {"tt": 15, "ten": "Chân danh", "coho": "Nha tiép ma, Biap scôt", "khoa_hoc": "Euonymus forbesiana Loesn.", "ho": "Celastraceae", "bo_phan": "lá non", "habitat": "Chân danh là loài cây thường mọc ở những khu vực có đất ẩm và nhiều bóng râm. Cây có thể mọc tự nhiên hoặc được trồng trong các rẫy hoặc gần các khu vực sinh sống của người Cơ Ho. Nơi mọc: - Ven suối, dưới các khu rừng thưa, đất ẩm. - Đồi núi thấp hoặc vùng đất có độ ẩm cao, có bóng râm. Đặc điểm: Cây chân danh không đòi hỏi nhiều công chăm sóc, thường mọc tự nhiên và có thể được thu hái dễ dàng. Cây có thân thảo, lá dài và dày, mọc thành bụi.", "cooking": "Cây chân danh được người Cơ Ho sử dụng chủ yếu làm rau ăn, nhất là trong các bữa cơm hàng ngày: Cách sử dụng: - Lá: Người Cơ Ho hái lá chân danh, rửa sạch và dùng như rau trong các món canh hoặc xào. - Món ăn: Lá chân danh thường được nấu canh với các nguyên liệu khác như cá suối, thịt heo, hoặc nấu chung với măng, tạo thành những món ăn dễ ăn và mát. - Ăn sống: Đôi khi, lá cũng được cắt nhỏ để làm gia vị trong các món ăn hoặc trộn chung với gỏi.", "notes": "Người Cơ Ho có những quan niệm và lưu ý riêng khi sử dụng cây chân danh: - Không hái quá nhiều: Mặc dù cây chân danh rất dễ trồng và phát triển, người Cơ Ho thường chỉ hái lá vừa đủ dùng để đảm bảo cây tiếp tục phát triển và không bị cạn kiệt. - Không hái ở nơi ô nhiễm: Cũng như các loại cây khác, người Cơ Ho chỉ hái chân danh từ những khu vực sạch, tránh xa những nơi có ô nhiễm hay đất bẩn. - Sử dụng tươi: Cây chân danh thường được sử dụng ngay trong ngày, và người Cơ Ho thường không tích trữ lá lâu vì chúng dễ héo và mất đi chất dinh dưỡng.", "eco_suggest": ["ven_suoi", "gan_ray", "rung_am", "dat_am"]}, {"tt": 16, "ten": "Sơn địch", "coho": "Jùn ber, N’rong ta", "khoa_hoc": "Aristolochia tagala Chamiss", "ho": "Aristolochiaceae", "bo_phan": "Lá non", "habitat": "- Đặc điểm: Sơn địch là cây dây leo, có lá hình trái tim, bóng và thường mọc thành từng bụi hoặc mọc dày trong các khu vực đất ẩm. Cây có mùi thơm đặc trưng, thường được người dân sử dụng để làm gia vị trong các món ăn. Nơi mọc: Cây sơn địch mọc tự nhiên ở các khu vực rừng thưa, ven suối, hoặc trong những khu vực đất ẩm có bóng râm. Đặc biệt, cây sơn địch thường gặp ở đồi núi, nơi đất tươi tốt, dễ sinh trưởng và phát triển mạnh.", "cooking": "- Cách sử dụng: -Lá sơn địch: Người Cơ Ho sử dụng lá sơn địch làm gia vị trong các món ăn. Lá có mùi thơm đặc trưng, được dùng trong canh, xào, hoặc nướng với các loại thịt như gà, heo, bò. - Món ăn: Một món ăn phổ biến là cá nướng lá sơn địch hoặc thịt gà xào lá sơn địch, tạo nên món ăn có hương vị đặc biệt, thơm mát và dễ ăn. - Ăn kèm: Lá sơn địch có thể được dùng để ướp gia vị cho các món ăn, hoặc ăn kèm với cơm như một loại rau thơm bổ sung thêm hương vị cho bữa ăn.", "notes": "- Không hái quá nhiều: Người Cơ Ho chỉ hái lá sơn địch khi cần thiết, không hái hết hoặc làm ảnh hưởng đến sự phát triển của cây. Cây cần được bảo tồn để tái sinh và tiếp tục phát triển. - Không hái ở nơi ô nhiễm: Lá sơn địch chỉ được thu hoạch từ những khu vực sạch, tránh hái ở gần các nguồn nước ô nhiễm hoặc nơi có chất thải.", "eco_suggest": ["ven_suoi", "rung_am", "dat_am"]}, {"tt": 17, "ten": "Gừng rừng", "coho": "Tra Vrê", "khoa_hoc": "Zingiber densissimum", "ho": "Zingiberakeae", "bo_phan": "Ngọn non.", "habitat": "- Đặc điểm: Là một loài thực vật có hoa trong họ Gừng. Cây thân cỏ, có đặc điểm lông tơ (mao) bao phủ thân và lá, khác với gừng thường. -Nơi mọc: Gừng rừng thường mọc hoang dã trong rừng thưa, đồi núi, hoặc ven suối, nơi đất ẩm và có bóng râm. Cây cũng mọc ở những khu vực có đất tơi xốp, dễ thoát nước và không chịu được nơi đất quá khô.", "cooking": "Cách sử dụng: Gừng rừng thường được lấy phần ngọn non làm các món xào, luộc trong các món ăn của người Cơ Ho.. 5. Quan niệm và lưu ý của người Cơ Ho - Không hái quá nhiều: Người Cơ Ho chỉ hái phần ngọn non của gừng rừng khi cần thiết và không lấy đi hết cây, giúp đảm bảo cây tiếp tục phát triển. - Không hái ở nơi ô nhiễm: Gừng rừng chỉ được thu hoạch từ những khu vực sạch sẽ, tránh những nơi đất ô nhiễm hoặc gần các khu vực có chất thải.", "notes": "- Không hái quá nhiều: Người Cơ Ho chỉ hái phần ngọn non của gừng rừng khi cần thiết và không lấy đi hết cây, giúp đảm bảo cây tiếp tục phát triển. - Không hái ở nơi ô nhiễm: Gừng rừng chỉ được thu hoạch từ những khu vực sạch sẽ, tránh những nơi đất ô nhiễm hoặc gần các khu vực có chất thải.", "eco_suggest": ["ven_suoi", "rung_am", "dat_am"]}];
+  const REGIONS = [{"id": "bidoup_core", "name": "🌲 Bidoup – Núi Bà (lõi rừng núi cao)", "desc": "Vùng rừng kín thường xanh núi cao, ẩm mát (khái quát).", "color": "#16a34a", "poly": [[12.348346, 108.807099], [12.307104, 108.824819], [12.27526, 108.83656], [12.243632, 108.828661], [12.205588, 108.816808], [12.176697, 108.766502], [12.201491, 108.703038], [12.216293, 108.660292], [12.227326, 108.599444], [12.263559, 108.577256], [12.302325, 108.586786], [12.32305, 108.640269], [12.329664, 108.690264], [12.359666, 108.742201]]}, {"id": "bidoup_buffer", "name": "🌿 Bidoup (vùng đệm/bìa rừng)", "desc": "Bìa rừng và chuyển tiếp sinh cảnh quanh lõi (khái quát).", "color": "#86efac", "poly": [[12.232539, 108.913914], [12.192995, 108.923386], [12.153151, 108.908877], [12.101542, 108.886667], [12.088208, 108.806374], [12.125698, 108.742912], [12.133749, 108.681011], [12.160068, 108.615662], [12.20858, 108.604359], [12.253705, 108.632263], [12.26715, 108.707252], [12.286069, 108.759694], [12.316623, 108.838213], [12.279923, 108.899416]]}, {"id": "honggiao_ridge", "name": "⛰️ Hòn Giao (khối núi/sống núi)", "desc": "Khối núi cao khí hậu mát ẩm, sườn dốc và thung lũng nhỏ (khái quát).", "color": "#7c3aed", "poly": [[12.269134, 108.648264], [12.245289, 108.645914], [12.218833, 108.637164], [12.191316, 108.607751], [12.203082, 108.55491], [12.219338, 108.522765], [12.224154, 108.476244], [12.248738, 108.451174], [12.278221, 108.453593], [12.298571, 108.487703], [12.302067, 108.530754], [12.32291, 108.565626], [12.324509, 108.619072], [12.293839, 108.639067]]}, {"id": "khanhle_upper", "name": "🏞️ Đèo Khánh Lê (thượng đèo)", "desc": "Đoạn cao, ẩm mát, nhiều taluy và rừng ẩm (khái quát).", "color": "#2563eb", "poly": [[12.27, 108.54], [12.26, 108.58], [12.24, 108.62], [12.22, 108.66], [12.2, 108.69], [12.18, 108.68], [12.19, 108.6], [12.22, 108.55]]}, {"id": "khanhle_mid", "name": "🏞️ Đèo Khánh Lê (trung đèo)", "desc": "Đoạn giữa theo thung lũng và khe suối (khái quát).", "color": "#60a5fa", "poly": [[12.18, 108.68], [12.16, 108.72], [12.14, 108.76], [12.12, 108.8], [12.1, 108.83], [12.08, 108.8], [12.1, 108.74], [12.14, 108.7]]}, {"id": "khanhle_lower", "name": "🏞️ Đèo Khánh Lê (hạ đèo)", "desc": "Đoạn thấp dần về Khánh Vĩnh, bìa rừng và ven suối (khái quát).", "color": "#93c5fd", "poly": [[12.1, 108.83], [12.06, 108.9], [12.02, 108.96], [11.98, 109.02], [11.95, 109.05], [11.94, 109.0], [11.98, 108.92], [12.04, 108.86]]}];
+  const ECO = [{"id": "ven_suoi", "name": "🌊 Ven suối – khe nước", "desc": "Khe suối, bờ nước, nơi ẩm ướt, đất trũng.", "color": "#0ea5e9"}, {"id": "rung_am", "name": "🌳 Rừng ẩm dưới tán", "desc": "Dưới tán rừng, nhiều bóng râm, ẩm mát.", "color": "#22c55e"}, {"id": "dat_am", "name": "🌱 Đất ẩm – đất thấp", "desc": "Bìa rừng, rừng thưa, đất thấp ẩm.", "color": "#f59e0b"}, {"id": "gan_ray", "name": "🌾 Gần rẫy – ven khu dân cư", "desc": "Ven rẫy/ven nhà, nơi dễ thu hái.", "color": "#ef4444"}];
+  const ECO_POLYS = {"ven_suoi": [[12.141279, 108.798916], [12.115845, 108.778161], [12.117993, 108.724579], [12.135099, 108.690092], [12.138008, 108.646634], [12.155328, 108.613303], [12.17991, 108.611325], [12.200129, 108.637216], [12.203946, 108.683543], [12.217896, 108.715783], [12.227017, 108.76886], [12.203736, 108.797365], [12.181846, 108.806142], [12.161968, 108.80808]], "rung_am": [[12.267283, 108.800901], [12.256186, 108.843042], [12.230867, 108.853362], [12.211098, 108.860966], [12.191361, 108.854251], [12.166743, 108.845264], [12.151945, 108.806549], [12.169276, 108.765141], [12.176505, 108.734281], [12.185294, 108.693142], [12.208658, 108.681019], [12.232538, 108.690219], [12.243381, 108.729636], [12.248866, 108.762226]], "dat_am": [[12.145629, 108.771846], [12.125461, 108.780174], [12.105639, 108.776265], [12.082745, 108.768386], [12.061959, 108.73771], [12.074919, 108.691661], [12.086328, 108.662739], [12.091599, 108.620382], [12.113292, 108.601512], [12.13774, 108.605792], [12.152759, 108.639866], [12.156019, 108.676598], [12.174395, 108.710061], [12.171517, 108.757007]], "gan_ray": [[12.021908, 108.837176], [12.035147, 108.791311], [12.046342, 108.762352], [12.051758, 108.719985], [12.073555, 108.70147], [12.097987, 108.705967], [12.112808, 108.740354], [12.116131, 108.776878], [12.134573, 108.810572], [12.131279, 108.857356], [12.105383, 108.871915], [12.085248, 108.880236], [12.065431, 108.876161], [12.042451, 108.868267]]};
+
+  const map = L.map('map').setView([12.19, 108.68], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // Region layers
+  const regionLayers = {};
+  REGIONS.forEach(r => {
+    const layer = L.polygon(r.poly, {
+      color: r.color,
+      fillColor: r.color,
+      fillOpacity: 0.16,
+      weight: 3,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+    layer.bindPopup(`<b>${r.name}</b><br>${r.desc}<br><span style="font-size:11px;color:#6b7280">Vùng khái quát (minh họa).</span>`);
+    regionLayers[r.id] = layer;
+  });
+
+  // Eco overlay toggleable
+  const ecoLayers = {};
+  ECO.forEach(z => {
+    const layer = L.polygon(ECO_POLYS[z.id], {
+      color: z.color,
+      fillColor: z.color,
+      fillOpacity: 0.08,
+      weight: 2,
+      dashArray: '7 6',
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+    layer.bindPopup(`<b>${z.name}</b><br>${z.desc}<br><span style="font-size:11px;color:#6b7280">Lớp phủ sinh thái (khái quát).</span>`);
+    ecoLayers[z.id] = layer;
+  });
+
+  // Sidebar tabs
+  const tabs = document.querySelectorAll('.tab');
+  const sections = {
+    species: document.getElementById('species'),
+    regions: document.getElementById('regions')
+  };
+  function setTab(name){
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    Object.keys(sections).forEach(k => sections[k].classList.toggle('active', k === name));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+
+  // Helpers
+  function matches(s, q){
+    if(!q) return true;
+    const t = (s.ten + ' ' + s.coho + ' ' + s.khoa_hoc + ' ' + s.ho + ' ' + s.bo_phan).toLowerCase();
+    return t.includes(q.toLowerCase());
+  }
+  function ecoById(id){ return ECO.find(e=>e.id===id); }
+  function tagHtml(label, color){
+    return `<span class="tag"><span class="dot" style="background:${color}"></span><span>${label}</span></span>`;
+  }
+
+  // Very light auto assignment to big areas (for filtering only)
+  function areaSuggest(s){
+    const t = (s.habitat + ' ' + s.cooking).toLowerCase();
+    const out = new Set();
+    if(t.includes('đèo')) out.add('khanhle');
+    if(t.includes('núi') || t.includes('rừng kín') || t.includes('vườn quốc gia')) out.add('bidoup');
+    // default: assume both bidoup & khanhle are possible in the study corridor
+    if(out.size===0) out.add('bidoup');
+    return Array.from(out);
+  }
+
+  // Render Regions tab
+  function renderRegions(){
+    sections.regions.innerHTML = `
+      <div class="card">
+        <div class="title">Khu vực chính (chi tiết)</div>
+        <div class="desc">Bidoup tách lõi/vùng đệm; Khánh Lê tách thượng/trung/hạ; bổ sung Hòn Giao.</div>
+      </div>
+      ${REGIONS.map(r => `
+        <div class="card">
+          <div class="head">
+            <div>
+              <div class="title">${r.name}</div>
+              <div class="desc">${r.desc}</div>
+              <div class="tags">${tagHtml('Vùng khu vực', r.color)}</div>
+            </div>
+            <button class="btn" data-zoom-region="${r.id}">Zoom</button>
+          </div>
+        </div>
+      `).join('')}
+      <div class="card">
+        <div class="title">Lớp phủ sinh thái</div>
+        <div class="desc">Bật/tắt để nhìn “nơi chốn” rõ hơn (không GPS).</div>
+        ${ECO.map(z => `
+          <div class="toggleLine">
+            <span class="dot" style="background:${z.color}"></span>
+            <span>${z.name}</span>
+            <label style="margin-left:auto;display:flex;align-items:center;gap:6px">
+              <input type="checkbox" data-eco="${z.id}" checked/>
+              Hiện
+            </label>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    sections.regions.querySelectorAll('[data-zoom-region]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.zoomRegion;
+        const layer = regionLayers[id];
+        if(layer) { map.fitBounds(layer.getBounds(), {padding:[24,24]}); layer.openPopup(); }
+      });
+    });
+
+    sections.regions.querySelectorAll('input[data-eco]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.eco;
+        const layer = ecoLayers[id];
+        if(!layer) return;
+        if(cb.checked) layer.addTo(map);
+        else map.removeLayer(layer);
+      });
+    });
+  }
+
+  // Render Species tab (each plant separately)
+  const qEl = document.getElementById('q');
+  const filterEl = document.getElementById('filter');
+
+  function renderSpecies(){
+    const q = qEl.value.trim();
+    const f = filterEl.value;
+
+    const list = SPECIES
+      .filter(s => matches(s, q))
+      .filter(s => {
+        if(f==='all') return true;
+        if(['bidoup','honggiao','khanhle'].includes(f)) {
+          const a = areaSuggest(s);
+          return a.includes(f);
+        }
+        // eco filter based on suggested eco tags
+        return (s.eco_suggest || []).includes(f);
+      });
+
+    sections.species.innerHTML = `
+      <div class="mini" style="margin:4px 0 10px">Đang hiển thị <b>${list.length}</b> / ${SPECIES.length} loài.</div>
+      ${list.map(s => {
+        const ecoTags = (s.eco_suggest||[]).map(id => {
+          const z = ecoById(id);
+          return z ? tagHtml(z.name.replace(/^..\s*/,'Sinh thái: '), z.color) : '';
+        }).join('');
+        const areas = areaSuggest(s).map(a => {
+          const label = a==='bidoup' ? 'Khu: Bidoup – Núi Bà' : (a==='khanhle' ? 'Khu: đèo Khánh Lê' : 'Khu: Hòn Giao');
+          const color = a==='bidoup' ? '#16a34a' : (a==='khanhle' ? '#2563eb' : '#7c3aed');
+          return tagHtml(label, color);
+        }).join('');
+        return `
+          <div class="card" id="sp-${s.tt}">
+            <div class="head">
+              <div>
+                <div class="title">${s.tt}. ${s.ten}</div>
+                <div class="desc"><i>${s.khoa_hoc || '—'}</i></div>
+                <div class="tags">
+                  <span class="pill">${s.ho || '—'}</span>
+                  <span class="pill">Bộ phận: ${s.bo_phan || '—'}</span>
+                  ${s.coho ? `<span class="pill">Tên Cơ Ho: ${s.coho}</span>` : ''}
+                </div>
+                <div class="tags" style="margin-top:8px">${areas + ecoTags}</div>
+              </div>
+              <button class="btn" data-focus="${s.tt}">Xem trên bản đồ</button>
+            </div>
+
+            <details>
+              <summary>Nơi mọc (tri thức bản địa)</summary>
+              <div class="row">${s.habitat || '—'}</div>
+            </details>
+
+            <details>
+              <summary>Cách chế biến / sử dụng</summary>
+              <div class="row">${s.cooking || '—'}</div>
+            </details>
+
+            <details>
+              <summary>Quan niệm & lưu ý</summary>
+              <div class="row">${s.notes || '—'}</div>
+            </details>
+
+            <div class="mini">Lưu ý: các nhãn khu/vùng sinh thái ở trên là gợi ý phân loại để lọc hiển thị, không phải GPS.</div>
+          </div>
+        `;
+      }).join('')}
+    `;
+
+    sections.species.querySelectorAll('[data-focus]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tt = parseInt(btn.dataset.focus);
+        // simple focus: show the “most likely” region: bidoup_core by default
+        const card = document.getElementById('sp-'+tt);
+        if(card) card.scrollIntoView({behavior:'smooth', block:'start'});
+        // fly to corridor center and flash eco layers that match
+        map.setView([12.19, 108.68], 10);
+      });
+    });
+  }
+
+  qEl.addEventListener('input', () => { if(document.querySelector('.tab.active')?.dataset.tab==='species') renderSpecies(); });
+  filterEl.addEventListener('change', () => { if(document.querySelector('.tab.active')?.dataset.tab==='species') renderSpecies(); });
+
+  // Clicking regions switches to species filtered
+  Object.keys(regionLayers).forEach(id => {
+    regionLayers[id].on('click', () => {
+      setTab('species');
+      if(id.startsWith('bidoup')) filterEl.value='bidoup';
+      else if(id.startsWith('khanhle')) filterEl.value='khanhle';
+      else if(id.startsWith('honggiao')) filterEl.value='honggiao';
+      renderSpecies();
+    });
+  });
+  Object.keys(ecoLayers).forEach(id => {
+    ecoLayers[id].on('click', () => {
+      setTab('species');
+      filterEl.value=id;
+      renderSpecies();
+    });
+  });
+
+  // Legend
+  const legend = L.control({position:'bottomleft'});
+  legend.onAdd = function() {
+    const div = L.DomUtil.create('div', 'info');
+    div.style.background = 'white';
+    div.style.border = '1px solid #e5e7eb';
+    div.style.borderRadius = '12px';
+    div.style.padding = '8px 10px';
+    div.style.fontSize = '12px';
+    div.style.boxShadow = '0 2px 8px rgba(15,23,42,0.10)';
+    div.innerHTML = '<b>Khu vực chính</b><br/>' + REGIONS.slice(0,3).map(r => `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+        <span style="width:12px;height:12px;border-radius:999px;background:${r.color};opacity:.75;display:inline-block"></span>
+        <span>${r.name.replace(/^..\s*/,'')}</span>
+      </div>
+    `).join('');
+    return div;
+  };
+  legend.addTo(map);
+
+  renderSpecies();
+  renderRegions();
+</script>
+</body>
+</html>
